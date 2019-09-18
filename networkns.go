@@ -44,7 +44,7 @@ func NewWithName(name string) (*NetworkNs, error) {
 }
 
 // Close ...
-func (ns *NetworkNs) Close() error {
+func Close(ns *NetworkNs) error {
 	return ns.f.Close()
 }
 
