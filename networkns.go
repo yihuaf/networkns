@@ -103,3 +103,23 @@ func GetFromThread(pid, tid int) (*NetworkNs, error) {
 func Get() (*NetworkNs, error) {
 	return GetFromThread(os.Getpid(), syscall.Gettid())
 }
+
+// IsSame determines if two network handles refer to the same network namespace.
+// This is done by comparing the device and inode that the file descriptors
+// point to.
+func IsSame(actual *NetworkNs, expected *NetworkNs) bool {
+	if actual.f.Fd() == expected.f.Fd() {
+		return true
+	}
+
+	var s1, s2 syscall.Stat_t
+	if err := syscall.Fstat(int(actual.f.Fd()), &s1); err != nil {
+		return false
+	}
+
+	if err := syscall.Fstat(int(expected.f.Fd()), &s2); err != nil {
+		return false
+	}
+
+	return (s1.Dev == s2.Dev) && (s1.Ino == s2.Ino)
+}
