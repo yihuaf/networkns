@@ -5,8 +5,13 @@ package networkns
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 )
+
+const nsRunDir = "/var/run/ns"
 
 // NetworkNs ...
 type NetworkNs struct {
@@ -15,17 +20,37 @@ type NetworkNs struct {
 
 // New ....
 func New() (*NetworkNs, error) {
-	return nil, nil
+	if err := unix.Unshare(unix.CLONE_NEWNET); err != nil {
+		return nil, err
+	}
+
+	return Get()
 }
 
 // NewWithName ...
 func NewWithName(name string) (*NetworkNs, error) {
-	return nil, nil
+	if err := unix.Unshare(unix.CLONE_NEWNET); err != nil {
+		return nil, err
+	}
+
+	nsPath := filepath.Join(nsRunDir, name)
+
+	if err := unix.Mount(GetCurrentThreadNsPath(), nsPath, "none", unix.MS_BIND,
+		""); err != nil {
+		return nil, err
+	}
+
+	return GetFromPath(nsPath)
 }
 
 // Close ...
 func (ns *NetworkNs) Close() error {
 	return ns.f.Close()
+}
+
+// GetCurrentThreadNsPath gets the network namespace path of the current thread.
+func GetCurrentThreadNsPath() string {
+	return (GetThreadNsPath(os.Getpid(), unix.Gettid()))
 }
 
 // GetThreadNsPath gets the path of the network namespace under /proc for a
