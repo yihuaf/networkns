@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )
 
@@ -41,6 +42,16 @@ func NewWithName(name string) (*NetworkNs, error) {
 	}
 
 	return GetFromPath(nsPath)
+}
+
+// Set ....
+func Set(ns *NetworkNs) error {
+	if err := unix.Setns(int(ns.f.Fd()), unix.CLONE_NEWNET); err != nil {
+		return errors.Wrapf(err, "Failed to switching network namespace: %s",
+			ns.f.Name())
+	}
+
+	return nil
 }
 
 // Close ...
